@@ -1,0 +1,16 @@
+---
+import AppLayout from '@/layouts/AppLayout.astro';
+import { renderTerminalTsxPage } from '@/lib/renderTerminalTsx';
+
+const { directory, slug } = Astro.params;
+const renderedPage = await renderTerminalTsxPage(`${directory}/${slug}.tsx`);
+
+if (!renderedPage) {
+  return new Response(null, { status: 404 });
+}
+---
+
+<AppLayout title={renderedPage.title}>
+  <a class="project-back" href="/" aria-label="Back to terminal">Back</a>
+  <main class="project-page" set:html={renderedPage.html} />
+</AppLayout>

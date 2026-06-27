@@ -1,18 +1,107 @@
 ---
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
+import { extname, parse } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ChromeOptions } from '@/components/ChromeOptions';
+import { BottomCommandBar } from '@/components/BottomCommandBar';
 import { HomePage } from '@/components/HomePage';
 import { PageFrame } from '@/components/PageFrame';
 import AppLayout from '@/layouts/AppLayout.astro';
 
 const descriptionPath = fileURLToPath(new URL('../../public/description.txt', import.meta.url));
 const description = (await readFile(descriptionPath, 'utf-8')).trim();
+const terminalRootPath = fileURLToPath(new URL('../../public/terminal/', import.meta.url));
+const terminalDirectoryNames = ['open_source', 'robotics', 'web_tooling'];
+const rootScriptNames = ['contact.sh', 'theme.sh'];
+
+async function readDirectoryFiles(directoryPath: string) {
+  try {
+    const entries = await readdir(directoryPath, { withFileTypes: true });
+    return entries
+      .filter((entry) => entry.isFile() && !entry.name.startsWith('.'))
+      .map((entry) => entry.name)
+      .sort((first, second) => first.localeCompare(second));
+  } catch {
+    return [];
+  }
+}
+
+const terminalManifest = {
+  directories: await Promise.all(
+    terminalDirectoryNames.map(async (name) => ({
+      name,
+      files: (await readDirectoryFiles(`${terminalRootPath}${name}`)).map((fileName) => ({
+        name: fileName,
+        displayName: `${parse(fileName).name}.md`,
+        href: `/terminal/${name}/${fileName}`,
+      })),
+    })),
+  ),
+  rootFiles: rootScriptNames.map((name) => ({
+    name,
+    displayName: name,
+    href: `/terminal/${name}`,
+    extension: extname(name),
+  })),
+};
 ---
 
 <AppLayout>
-  <ChromeOptions client:load />
   <PageFrame>
     <HomePage description={description} />
+    <BottomCommandBar client:load manifest={terminalManifest} />
   </PageFrame>
 </AppLayout>
+
+<script>
+  const warmedDescriptionLinks = new Set<string>();
+
+  function warmDescriptionLink(anchor: HTMLAnchorElement) {
+    const href = anchor.href;
+
+    if (!href || warmedDescriptionLinks.has(href)) {
+      return;
+    }
+
+    warmedDescriptionLinks.add(href);
+
+    const url = new URL(href, window.location.href);
+
+    if (url.origin !== window.location.origin) {
+      const preconnect = document.createElement('link');
+      preconnect.rel = 'preconnect';
+      preconnect.href = url.origin;
+      preconnect.crossOrigin = '';
+      document.head.append(preconnect);
+    }
+
+    const prefetch = document.createElement('link');
+    prefetch.rel = 'prefetch';
+    prefetch.href = url.href;
+    prefetch.as = 'document';
+    document.head.append(prefetch);
+  }
+
+  function getDescriptionLink(event: Event) {
+    if (!(event.target instanceof Element)) {
+      return null;
+    }
+
+    return event.target.closest('.hero-description a[href]');
+  }
+
+  document.addEventListener('pointerover', (event) => {
+    const link = getDescriptionLink(event);
+
+    if (link instanceof HTMLAnchorElement) {
+      warmDescriptionLink(link);
+    }
+  });
+
+  document.addEventListener('focusin', (event) => {
+    const link = getDescriptionLink(event);
+
+    if (link instanceof HTMLAnchorElement) {
+      warmDescriptionLink(link);
+    }
+  });
+</script>

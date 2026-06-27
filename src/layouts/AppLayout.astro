@@ -26,6 +26,34 @@ const {
     </script>
   </head>
   <body>
-    <slot />
+    <div id="swup" class="page-transition">
+      <slot />
+    </div>
+    <script>
+      import Swup from 'swup';
+      import SwupScriptsPlugin from '@swup/scripts-plugin';
+
+      declare global {
+        interface Window {
+          portfolioSwup?: Swup;
+          portfolioNavigate?: (url: string) => void;
+        }
+      }
+
+      function installPageTransitions() {
+        if (!window.portfolioSwup) {
+          window.portfolioSwup = new Swup({
+            containers: ['#swup'],
+            plugins: [new SwupScriptsPlugin()],
+          });
+        }
+
+        window.portfolioNavigate = (url: string) => {
+          window.portfolioSwup?.navigate(url);
+        };
+      }
+
+      installPageTransitions();
+    </script>
   </body>
 </html>
