@@ -1,13 +1,18 @@
 ---
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { ChromeOptions } from '@/components/ChromeOptions';
 import { HomePage } from '@/components/HomePage';
 import { PageFrame } from '@/components/PageFrame';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import AppLayout from '@/layouts/AppLayout.astro';
+
+const descriptionPath = fileURLToPath(new URL('../../public/description.txt', import.meta.url));
+const description = (await readFile(descriptionPath, 'utf-8')).trim();
 ---
 
 <AppLayout>
-  <ThemeToggle client:only="react" />
+  <ChromeOptions client:load />
   <PageFrame>
-    <HomePage />
+    <HomePage description={description} />
   </PageFrame>
 </AppLayout>
