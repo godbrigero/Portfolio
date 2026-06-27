@@ -6,7 +6,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "start": "node ./dist/server/entry.mjs",
+    "start": "astro preview",
     "astro": "astro",
     "test:visual": "playwright test",
     "test:visual:headed": "playwright test --headed"
@@ -16,8 +16,8 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@astrojs/node": "^11.0.0",
     "@astrojs/react": "^6.0.0",
+    "@astrojs/vercel": "^11.0.0",
     "@swup/scripts-plugin": "^2.1.0",
     "astro": "^7.0.3",
     "react": "^19.2.7",

@@ -173,6 +173,7 @@ export function BottomCommandBar({ manifest }: BottomCommandBarProps) {
   const nextLineId = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const outputRef = useRef<HTMLDivElement>(null);
+  const prefetchedProjectUrls = useRef(new Set<string>());
   const safeCaretIndex = Math.min(caretIndex, input.length);
   const isShowingHint = input.length === 0 && lines.length === 0;
   const textBeforeCursor = input.slice(0, safeCaretIndex);
@@ -263,6 +264,41 @@ export function BottomCommandBar({ manifest }: BottomCommandBarProps) {
     window.requestAnimationFrame(() => {
       inputRef.current?.setSelectionRange(nextCaretIndex, nextCaretIndex);
       inputRef.current?.focus();
+    });
+  }
+
+  function prefetchProjectUrl(url: string) {
+    if (prefetchedProjectUrls.current.has(url)) {
+      return;
+    }
+
+    prefetchedProjectUrls.current.add(url);
+
+    const link = document.createElement('link');
+    link.rel = 'prefetch';
+    link.href = url;
+    link.as = 'document';
+    link.dataset.portfolioPrefetch = 'project';
+    document.head.append(link);
+
+    void fetch(url, {
+      cache: 'force-cache',
+      credentials: 'same-origin',
+    }).catch(() => {
+      prefetchedProjectUrls.current.delete(url);
+      link.remove();
+    });
+  }
+
+  function prefetchDirectoryProjects(directoryName: string) {
+    const currentDirectory = manifest.directories.find((entry) => entry.name === directoryName);
+
+    if (!currentDirectory) {
+      return;
+    }
+
+    currentDirectory.files.slice(0, 2).forEach((file) => {
+      prefetchProjectUrl(getProjectUrl(directoryName, file));
     });
   }
 
@@ -368,7 +404,9 @@ export function BottomCommandBar({ manifest }: BottomCommandBarProps) {
   }
 
   function navigateToProject(file: TerminalFile, fileDirectory: string) {
-    navigateTo(getProjectUrl(fileDirectory, file));
+    const url = getProjectUrl(fileDirectory, file);
+    prefetchProjectUrl(url);
+    navigateTo(url);
   }
 
   async function runCommand(rawInput: string) {
@@ -391,6 +429,10 @@ export function BottomCommandBar({ manifest }: BottomCommandBarProps) {
 
     if (typeof result.nextDirectory === 'string') {
       setDirectory(result.nextDirectory);
+
+      if (result.nextDirectory) {
+        prefetchDirectoryProjects(result.nextDirectory);
+      }
     }
 
     if (result.clear) {
@@ -403,6 +445,7 @@ export function BottomCommandBar({ manifest }: BottomCommandBarProps) {
     setCommandInput('', 0);
 
     if (result.navigateUrl) {
+      prefetchProjectUrl(result.navigateUrl);
       navigateTo(result.navigateUrl);
       return;
     }
@@ -668,7 +711,7 @@ export function BottomCommandBar({ manifest }: BottomCommandBarProps) {
               </span>
               {isShowingHint ? (
                 <span className="terminal-hint" aria-hidden="true">
-                  {' hint: type "help" (this is a normal terminal)'}
+                  {' hint: type "help" to browse some projects'}
                 </span>
               ) : (
                 <span className="terminal-typed" aria-hidden="true">
