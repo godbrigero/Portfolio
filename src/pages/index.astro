@@ -1,48 +1,9 @@
 ---
-import { readdir, readFile } from 'node:fs/promises';
-import { extname, parse } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { BottomCommandBar } from '@/components/BottomCommandBar';
 import { HomePage } from '@/components/HomePage';
 import { PageFrame } from '@/components/PageFrame';
+import { description, terminalManifest } from '@/generated/portfolioContent';
 import AppLayout from '@/layouts/AppLayout.astro';
-
-const descriptionPath = fileURLToPath(new URL('../../public/description.txt', import.meta.url));
-const description = (await readFile(descriptionPath, 'utf-8')).trim();
-const terminalRootPath = fileURLToPath(new URL('../../public/terminal/', import.meta.url));
-const terminalDirectoryNames = ['open_source', 'robotics', 'web_tooling'];
-const rootScriptNames = ['contact.sh', 'theme.sh'];
-
-async function readDirectoryFiles(directoryPath: string) {
-  try {
-    const entries = await readdir(directoryPath, { withFileTypes: true });
-    return entries
-      .filter((entry) => entry.isFile() && !entry.name.startsWith('.'))
-      .map((entry) => entry.name)
-      .sort((first, second) => first.localeCompare(second));
-  } catch {
-    return [];
-  }
-}
-
-const terminalManifest = {
-  directories: await Promise.all(
-    terminalDirectoryNames.map(async (name) => ({
-      name,
-      files: (await readDirectoryFiles(`${terminalRootPath}${name}`)).map((fileName) => ({
-        name: fileName,
-        displayName: `${parse(fileName).name}.md`,
-        href: `/terminal/${name}/${fileName}`,
-      })),
-    })),
-  ),
-  rootFiles: rootScriptNames.map((name) => ({
-    name,
-    displayName: name,
-    href: `/terminal/${name}`,
-    extension: extname(name),
-  })),
-};
 ---
 
 <AppLayout>

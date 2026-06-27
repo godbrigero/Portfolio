@@ -1,12 +1,8 @@
-import { existsSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
-import { basename, extname, join, normalize } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { extname, normalize } from 'node:path';
+import { terminalTsxSources } from '@/generated/portfolioContent';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import ts from 'typescript';
-
-const terminalRoot = fileURLToPath(new URL('../../public/terminal/', import.meta.url));
 
 export function escapeHtml(value: string) {
   return value
@@ -17,15 +13,20 @@ export function escapeHtml(value: string) {
     .replaceAll("'", '&#39;');
 }
 
-export function getSafeTerminalTsxPath(pathParam: string) {
-  const normalizedPath = normalize(pathParam).replace(/^(\.\.(\/|\\|$))+/, '');
-  const filePath = join(terminalRoot, normalizedPath);
+export function getSafeTerminalTsxKey(pathParam: string) {
+  const normalizedPath = normalize(pathParam)
+    .replace(/^(\.\.(\/|\\|$))+/, '')
+    .replaceAll('\\', '/');
 
-  if (!filePath.startsWith(terminalRoot) || extname(filePath) !== '.tsx') {
+  if (
+    normalizedPath.startsWith('/') ||
+    normalizedPath.includes('../') ||
+    extname(normalizedPath) !== '.tsx'
+  ) {
     return null;
   }
 
-  return filePath;
+  return normalizedPath;
 }
 
 export function renderTsxSource(source: string) {
@@ -62,22 +63,23 @@ export function renderTsxSource(source: string) {
 }
 
 export async function renderTerminalTsxPage(pathParam: string) {
-  const filePath = getSafeTerminalTsxPath(pathParam);
+  const sourceKey = getSafeTerminalTsxKey(pathParam);
 
-  if (!filePath || !existsSync(filePath)) {
+  if (!sourceKey || !(sourceKey in terminalTsxSources)) {
     return null;
   }
 
-  const source = await readFile(filePath, 'utf-8');
+  const entry = terminalTsxSources[sourceKey as keyof typeof terminalTsxSources];
+  const { source, title } = entry;
 
   try {
     return {
-      title: basename(filePath, '.tsx'),
+      title,
       html: renderTsxSource(source),
     };
   } catch (error) {
     return {
-      title: basename(filePath, '.tsx'),
+      title,
       html: `<pre>${escapeHtml(error instanceof Error ? error.message : 'Render failed')}</pre>`,
     };
   }

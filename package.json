@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "Personal portfolio built with Astro.",
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
+    "dev": "node scripts/generate-portfolio-content.mjs && astro dev",
+    "build": "node scripts/generate-portfolio-content.mjs && astro build",
     "preview": "astro preview",
-    "start": "astro preview",
+    "start": "astro dev",
     "astro": "astro",
     "test:visual": "playwright test",
     "test:visual:headed": "playwright test --headed"
