@@ -1,0 +1,13 @@
+---
+import { HomePage } from '@/components/HomePage';
+import { PageFrame } from '@/components/PageFrame';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import AppLayout from '@/layouts/AppLayout.astro';
+---
+
+<AppLayout>
+  <ThemeToggle client:only="react" />
+  <PageFrame>
+    <HomePage />
+  </PageFrame>
+</AppLayout>
